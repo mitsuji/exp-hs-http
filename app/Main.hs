@@ -16,22 +16,16 @@ import qualified Network.HTTP.Types.Method as M
 import qualified Network.Wai.Application.Static as Static
 import WaiAppStatic.Types (toPieces)
 
-import qualified Data.Aeson as AE
 
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
-import Data.Aeson.Types (ToJSON,toJSON,object,(.=))
-
 import qualified Data.ByteString as BS
+
+import Data.Aeson.Types (ToJSON,toJSON,object,(.=))
+import qualified Data.Aeson as AE
+
 import Data.Char (isDigit)
 import Data.Either (partitionEithers)
-
---import Data.Monoid ((<>))
-
---import qualified Data.Text.Lazy as LT
---import qualified Data.Text.Lazy.Encoding as LT
-
---import Data.List (sort)
 
 
 

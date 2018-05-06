@@ -3,7 +3,7 @@ port: 8080
 root: static
 
 rdbHost: localhost
-rdbName: exp-hs
-rdbUser: exp-hs-admin
+rdbName: exp_hs
+rdbUser: exp_hs_admin
 rdbPass: abcd1234
 

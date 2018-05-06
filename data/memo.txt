@@ -1,0 +1,17 @@
+## Prepare example database
+```
+$ mysql -u root -p
+mysql> CREATE DATABASE exp_hs;
+mysql> CREATE USER exp_hs_admin@localhost IDENTIFIED BY 'abcd1234';
+mysql> GRANT ALL PRIVILEGES ON exp_hs.* TO exp_hs_admin@'%';
+mysql> exit
+```
+
+## Prepare example data
+```
+$ mysql -D exp_hs -u exp_hs_admin -p
+mysql> source data/create.sql
+mysql> source data/insert.sql
+mysql> exit
+```
+

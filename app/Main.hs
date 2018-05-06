@@ -28,30 +28,53 @@ import qualified Data.Aeson as AE
 import Data.Char (isDigit)
 import Data.Either (partitionEithers)
 
+import qualified Data.Yaml as Yaml
 
+import Data.Aeson.Types (FromJSON,parseJSON,Value(..),(.:))
+
+data Conf = Conf { confHost :: String
+                 , confPort :: Int
+                 , confRoot :: String
+                 , confRdbHost :: String
+                 , confRdbName :: String
+                 , confRdbUser :: String
+                 , confRdbPass :: String
+                 }
+
+
+instance FromJSON Conf where
+  parseJSON (Object o) = Conf <$> o .: "host"
+                              <*> o .: "port"
+                              <*> o .: "root"
+                              <*> o .: "rdbHost"
+                              <*> o .: "rdbName"
+                              <*> o .: "rdbUser"
+                              <*> o .: "rdbPass"
+  parseJSON _ = mempty
 
 
 main :: IO ()
 main = do
-  host:port:_ <- getArgs
-  Warp.runSettings (
-    Warp.setHost (fromString host) $
-    Warp.setPort (read port) $
-    Warp.defaultSettings
-    ) $ routerApp
-
-    
-routerApp :: Wai.Application
-routerApp req respond = case Wai.pathInfo req of
-  "exp-hs-http" : _ -> expApp req respond --[TODO] catch exception
-  _ -> staticApp  req respond -- static html/js/css files
+  confPath:_ <- getArgs
+  econf <- Yaml.decodeFileEither confPath
+  case econf  of
+    Left error -> putStrLn $ show error
+    Right conf -> do
+      Warp.runSettings (
+        Warp.setHost (fromString $ confHost conf) $
+        Warp.setPort (confPort conf) $
+        Warp.defaultSettings
+        ) $ routerApp $ confRoot conf
 
 
-expApp :: Wai.Application
-expApp req respond = case (M.parseMethod (Wai.requestMethod req), Wai.pathInfo req) of
-  (Right M.POST, [_, "ep1"])  -> ep1App req respond -- /exp-hs-http/ep1
-  (Right M.POST, [_, "ep2"])  -> respond $ responseTxt "ep2" -- /exp-hs-http/ep2
-  _ -> staticApp req respond -- static html/js/css files
+routerApp :: String -> Wai.Application
+routerApp root req respond =
+  let
+    apppath = "exp-hs-http"
+  in case (M.parseMethod (Wai.requestMethod req), Wai.pathInfo req) of
+    (Right M.POST, [apppath, "ep1"])  -> ep1App req respond -- /exp-hs-http/ep1
+    (Right M.POST, [apppath, "ep2"])  -> respond $ responseTxt "ep2" -- /exp-hs-http/ep2
+    _ -> staticApp root req respond -- static html/js/css files
 
 
 {--
@@ -156,10 +179,10 @@ ep1App req respond = do
 
 
 
-staticApp :: Wai.Application
-staticApp = Static.staticApp $ settings { Static.ssIndices = indices }
+staticApp :: String -> Wai.Application
+staticApp root = Static.staticApp $ settings { Static.ssIndices = indices }
   where
-    settings = Static.defaultWebAppSettings "static"
+    settings = Static.defaultWebAppSettings root
     indices = fromJust $ toPieces ["main.html"] -- default content
 
 

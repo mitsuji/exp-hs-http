@@ -43,6 +43,7 @@ executables:
     - wai-app-static
     - wai-extra
     - aeson
+    - yaml
 
 tests:
   exp-hs-http-test:

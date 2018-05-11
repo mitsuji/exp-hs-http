@@ -157,3 +157,19 @@ i4' :: Kleisli IO String String
 i4' = Kleisli readFile2 <+> zeroArrow <+> Kleisli readFile
 ri4' = runKleisli i4'
 
+
+
+calc :: Kleisli IO Int Int
+calc = proc x -> do
+  p -< "数字を入力してください"
+  s <- g -< ()
+  s' <- arr read -< s
+  returnA -< (x + s')
+  where
+    p :: Kleisli IO String ()
+    p = Kleisli putStrLn
+    
+    g :: Kleisli IO () String
+    g = Kleisli $ \_-> getLine
+    
+rcalc = runKleisli calc

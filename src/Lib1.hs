@@ -181,27 +181,23 @@ type Dialogue a b = Kleisli IO a b
 
 
 calc :: Dialogue Int Int
-calc = proc init -> do
-  z <- calcNext -< init
-  z <- calcNext -< z
-  z <- calcNext -< z
-  returnA -< z
+calc = proc i -> do
+  y <- calcNext -< i
+  y <- calcNext -< y
+  r <- calcNext -< y
+  returnA -< r
   where
     calcNext :: Dialogue Int Int
     calcNext = proc y -> do
-      Kleisli putStrLn -< "次の整数を入力してください"
-      x <- (arr (+y)) <<< (arr read) <<< Kleisli (\_ -> getLine ) -<< ()
-      Kleisli putStrLn -< ("整数が " <> (show x) <> " になりました")
-      returnA -< x
+      Kleisli putStrLn -< ("整数は " <> (show y) <> " です。次の整数を入力してください。")
+      y' <- (arr (+y)) <<< (arr read) <<< Kleisli (\_ -> getLine) -<< ()
+      returnA -< y'
 
 
 rcalc :: IO ()
 rcalc = do
-  putStrLn "最初の整数を入力してください"
+  putStrLn "最初の整数を入力してください。"
   i <- read <$> getLine 
-  putStrLn $ "最初の整数は " <> (show i) <> " です"
   r <- (runKleisli calc) i
---  putStrLn $ "結果は " <> show r <> " です"
-  return ()
-
+  putStrLn $ "結果は " <> show r <> " です。"
 

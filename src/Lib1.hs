@@ -4,6 +4,7 @@ module Lib1
     (
     ) where
 
+import Data.Monoid ((<>))
 import Debug.Trace (trace)
 import Control.Arrow
 
@@ -159,17 +160,48 @@ ri4' = runKleisli i4'
 
 
 
-calc :: Kleisli IO Int Int
-calc = proc x -> do
-  p -< "数字を入力してください"
-  s <- g -< ()
-  s' <- arr read -< s
-  returnA -< (x + s')
+
+-- http://d.hatena.ne.jp/propella/20070904/p1
+
+rep (b,d) =  (d, b:d)
+f = take 5 $ loop rep 1
+
+f' = d
   where
-    p :: Kleisli IO String ()
-    p = Kleisli putStrLn
-    
-    g :: Kleisli IO () String
-    g = Kleisli $ \_-> getLine
-    
-rcalc = runKleisli calc
+    d = 1:d
+
+
+countdown (x, f) = (f x, cd)
+    where cd 0 = [0]
+          cd n = n : f (n - 1)
+
+
+  
+type Dialogue a b = Kleisli IO a b
+
+
+calc :: Dialogue Int Int
+calc = proc init -> do
+  z <- calcNext -< init
+  z <- calcNext -< z
+  z <- calcNext -< z
+  returnA -< z
+  where
+    calcNext :: Dialogue Int Int
+    calcNext = proc y -> do
+      Kleisli putStrLn -< "次の整数を入力してください"
+      x <- (arr (+y)) <<< (arr read) <<< Kleisli (\_ -> getLine ) -<< ()
+      Kleisli putStrLn -< ("整数が " <> (show x) <> " になりました")
+      returnA -< x
+
+
+rcalc :: IO ()
+rcalc = do
+  putStrLn "最初の整数を入力してください"
+  i <- read <$> getLine 
+  putStrLn $ "最初の整数は " <> (show i) <> " です"
+  r <- (runKleisli calc) i
+--  putStrLn $ "結果は " <> show r <> " です"
+  return ()
+
+

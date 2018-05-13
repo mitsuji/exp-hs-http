@@ -197,11 +197,7 @@ calc = proc i -> do
 -- [TODO] 止めたくなったら終わる
 calc' :: Dialogue Int Int
 calc' = proc i -> do
-  y <- calcNext -< i
-  y <- calcNext -< y
-  y <- calcNext -< y
-  y <- calcNext -< y
-  r <- calcNext -< y
+  r <- calcNext <<< calcNext <<< calcNext <<< calcNext <<< calcNext -< i
   returnA -< r
   where
     calcNext :: Dialogue Int Int

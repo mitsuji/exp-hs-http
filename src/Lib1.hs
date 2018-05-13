@@ -194,10 +194,40 @@ calc = proc i -> do
       returnA -< y'
 
 
+-- [TODO] 止めたくなったら終わる
+calc' :: Dialogue Int Int
+calc' = proc i -> do
+  y <- calcNext -< i
+  y <- calcNext -< y
+  y <- calcNext -< y
+  y <- calcNext -< y
+  r <- calcNext -< y
+  returnA -< r
+  where
+    calcNext :: Dialogue Int Int
+    calcNext = proc y -> do
+      Kleisli putStrLn -< ("整数は " <> (show y) <> " です。次はどうしますか?(p:足 s:引 m:掛)")
+      k <- Kleisli (\_ -> getLine) -<< ()
+      case head k of
+        'p' -> do
+          Kleisli putStrLn -< ("足します。整数を入力してください。")
+          y' <- (arr (+y)) <<< Kleisli (\_ -> read <$> getLine) -<< ()
+          returnA -< y'
+        's' -> do
+          Kleisli putStrLn -< ("引きます。整数を入力してください。")
+          y' <- (arr ((-)y)) <<< Kleisli (\_ -> read <$> getLine) -<< ()
+          returnA -< y'
+        'm' -> do
+          Kleisli putStrLn -< ("掛けます。整数を入力してください。")
+          y' <- (arr (*y)) <<< Kleisli (\_ -> read <$> getLine) -<< ()
+          returnA -< y'
+
+
+
 rcalc :: IO ()
 rcalc = do
   putStrLn "最初の整数を入力してください。"
   i <- read <$> getLine 
-  r <- (runKleisli calc) i
+  r <- (runKleisli calc') i
   putStrLn $ "結果は " <> show r <> " です。"
 

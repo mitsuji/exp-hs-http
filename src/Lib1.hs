@@ -179,6 +179,7 @@ countdown (x, f) = (f x, cd)
   
 type Dialogue a b = Kleisli IO a b
 
+data Calc = Add | Sub | Mul
 
 calc :: Dialogue Int Int
 calc = proc i -> do
@@ -197,26 +198,46 @@ calc = proc i -> do
 -- [TODO] 止めたくなったら終わる
 calc' :: Dialogue Int Int
 calc' = proc i -> do
-  r <- calcNext <<< calcNext <<< calcNext <<< calcNext <<< calcNext -< i
+  (c,y) <- calcNext -< i
+  (c,y) <- calcNext -< y
+  (c,y) <- calcNext -< y
+  (c,y) <- calcNext -< y
+  (c,r) <- calcNext -< y
   returnA -< r
   where
-    calcNext :: Dialogue Int Int
+    
+    readInt :: Dialogue () Int
+    readInt = Kleisli $ \_ -> read <$> getLine
+
+    readCalc :: Dialogue () (Maybe Calc)
+    readCalc =
+      (Kleisli $ \_ -> putStrLn "次はどうしますか? (a:足 s:引 m:掛)") >>> (Kleisli $ \_ -> f <$> getLine)
+      where
+        f k = case head k of
+          'a' -> Just Add
+          's' -> Just Sub
+          'm' -> Just Mul
+          _ -> Nothing
+
+    calcNext :: Dialogue Int (Maybe Calc,Int)
     calcNext = proc y -> do
-      Kleisli putStrLn -< ("整数は " <> (show y) <> " です。次はどうしますか?(p:足 s:引 m:掛)")
-      k <- Kleisli (\_ -> getLine) -<< ()
-      case head k of
-        'p' -> do
-          Kleisli putStrLn -< ("足します。整数を入力してください。")
-          y' <- (arr (+y)) <<< Kleisli (\_ -> read <$> getLine) -<< ()
-          returnA -< y'
-        's' -> do
-          Kleisli putStrLn -< ("引きます。整数を入力してください。")
-          y' <- (arr ((-)y)) <<< Kleisli (\_ -> read <$> getLine) -<< ()
-          returnA -< y'
-        'm' -> do
-          Kleisli putStrLn -< ("掛けます。整数を入力してください。")
-          y' <- (arr (*y)) <<< Kleisli (\_ -> read <$> getLine) -<< ()
-          returnA -< y'
+      Kleisli putStr -< ("整数は " <> (show y) <> " です。")
+      c <- readCalc -< ()
+      case c of
+        Just Add -> do
+          Kleisli putStrLn -< "足します。整数を入力してください。"
+          y' <- arr (y+) <<< readInt -<< ()
+          returnA -< (c,y')
+        Just Sub -> do
+          Kleisli putStrLn -< "引きます。整数を入力してください。"
+          y' <- arr (y-) <<< readInt -<< ()
+          returnA -< (c,y')
+        Just Mul -> do
+          Kleisli putStrLn -< "掛けます。整数を入力してください。"
+          y' <- arr (y*) <<< readInt -<< ()
+          returnA -< (c,y')
+        Nothing -> do
+          returnA -< (c,y)
 
 
 

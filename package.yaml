@@ -45,6 +45,7 @@ executables:
     - aeson
     - yaml
     - mysql-simple
+    - streamproc
 
 tests:
   exp-hs-http-test:

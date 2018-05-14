@@ -181,31 +181,19 @@ type Dialogue a b = Kleisli IO a b
 
 data Calc = Add | Sub | Mul
 
-calc :: Dialogue Int Int
-calc = proc i -> do
-  y <- calcNext -< i
-  y <- calcNext -< y
-  r <- calcNext -< y
-  returnA -< r
-  where
-    calcNext :: Dialogue Int Int
-    calcNext = proc y -> do
-      Kleisli putStrLn -< ("整数は " <> (show y) <> " です。次の整数を入力してください。")
-      y' <- (arr (+y)) <<< (arr read) <<< Kleisli (\_ -> getLine) -<< ()
-      returnA -< y'
-
 
 -- [TODO] 止めたくなったら終わる
-calc' :: Dialogue Int Int
-calc' = proc i -> do
-  (c,y) <- calcNext -< i
-  (c,y) <- calcNext -< y
-  (c,y) <- calcNext -< y
-  (c,y) <- calcNext -< y
-  (c,r) <- calcNext -< y
-  returnA -< r
+sum' :: Dialogue Int Int
+sum' = unit >>> unit >>> unit >>> unit >>> unit
   where
-    
+    unit :: Dialogue Int Int
+    unit = proc y -> do
+      Kleisli putStr -< ("整数は " <> (show y) <> " です。")
+      m <- readCalc -< ()
+      case m of
+        Just c -> calc c -<< y
+        Nothing -> returnA -< y
+
     readInt :: Dialogue () Int
     readInt = Kleisli $ \_ -> read <$> getLine
 
@@ -219,32 +207,24 @@ calc' = proc i -> do
           'm' -> Just Mul
           _ -> Nothing
 
-    calcNext :: Dialogue Int (Maybe Calc,Int)
-    calcNext = proc y -> do
-      Kleisli putStr -< ("整数は " <> (show y) <> " です。")
-      c <- readCalc -< ()
+    calc :: Calc -> Dialogue Int Int
+    calc c = proc y ->
       case c of
-        Just Add -> do
+        Add -> do
           Kleisli putStrLn -< "足します。整数を入力してください。"
-          y' <- arr (y+) <<< readInt -<< ()
-          returnA -< (c,y')
-        Just Sub -> do
+          arr (y+) <<< readInt -<< ()
+        Sub -> do
           Kleisli putStrLn -< "引きます。整数を入力してください。"
-          y' <- arr (y-) <<< readInt -<< ()
-          returnA -< (c,y')
-        Just Mul -> do
+          arr (y-) <<< readInt -<< ()
+        Mul -> do
           Kleisli putStrLn -< "掛けます。整数を入力してください。"
-          y' <- arr (y*) <<< readInt -<< ()
-          returnA -< (c,y')
-        Nothing -> do
-          returnA -< (c,y)
+          arr (y*) <<< readInt -<< ()
+            
 
-
-
-rcalc :: IO ()
-rcalc = do
+runSum :: IO ()
+runSum = do
   putStrLn "最初の整数を入力してください。"
   i <- read <$> getLine 
-  r <- (runKleisli calc') i
+  r <- (runKleisli sum') i
   putStrLn $ "結果は " <> show r <> " です。"
 
